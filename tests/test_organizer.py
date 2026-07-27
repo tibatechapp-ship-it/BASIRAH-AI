@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from src.organizer import classify, move_file, organize_library
 
 
@@ -13,21 +15,27 @@ def test_classify_unknown_category():
 
 
 def test_move_file_handles_name_collision(tmp_path: Path):
-    source1 = tmp_path / "a.txt"
-    source2 = tmp_path / "a.txt.copy"
+    source_dir1 = tmp_path / "s1"
+    source_dir2 = tmp_path / "s2"
+    source_dir1.mkdir()
+    source_dir2.mkdir()
+
+    source1 = source_dir1 / "a.txt"
+    source2 = source_dir2 / "a.txt"
     source1.write_text("x", encoding="utf-8")
     source2.write_text("y", encoding="utf-8")
 
     target = tmp_path / "dest"
-    first_dest = move_file(str(source1), str(target))
-
-    second_named_source = tmp_path / "a.txt"
-    second_named_source.write_text("z", encoding="utf-8")
-    second_dest = move_file(str(second_named_source), str(target))
+    first_dest = Path(move_file(str(source1), str(target)))
+    second_dest = Path(move_file(str(source2), str(target)))
 
     assert first_dest != second_dest
-    assert Path(first_dest).exists()
-    assert Path(second_dest).exists()
+    assert first_dest.exists()
+    assert second_dest.exists()
+    assert first_dest.read_text(encoding="utf-8") == "x"
+    assert second_dest.read_text(encoding="utf-8") == "y"
+    assert not source1.exists()
+    assert not source2.exists()
 
 
 def test_organize_library_moves_txt(tmp_path: Path):
@@ -39,3 +47,9 @@ def test_organize_library_moves_txt(tmp_path: Path):
     assert total == 1
     assert classified == 1
     assert (tmp_path / "العقيدة" / "book.txt").exists()
+
+
+def test_organize_library_rejects_invalid_path(tmp_path: Path):
+    invalid = tmp_path / "missing"
+    with pytest.raises(ValueError):
+        organize_library(str(invalid))

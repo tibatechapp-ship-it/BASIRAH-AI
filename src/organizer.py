@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Dict, List
@@ -69,7 +68,7 @@ def ensure_folder(path: str) -> None:
 
 
 def move_file(source: str, target_folder: str) -> str:
-    """Move file into folder with collision-safe rename and return destination."""
+    """Move file into folder with collision-safe rename. Returns destination path."""
     ensure_folder(target_folder)
     source_path = Path(source)
     destination = Path(target_folder) / source_path.name
@@ -84,7 +83,7 @@ def move_file(source: str, target_folder: str) -> str:
 
 
 def organize_library(library_path: str) -> tuple[int, int]:
-    """Organize supported files in a library path and return counters."""
+    """Organize supported files in a library path and return (total_files, classified_files)."""
     base = Path(library_path)
     if not base.exists() or not base.is_dir():
         raise ValueError("مسار المكتبة غير صالح")
