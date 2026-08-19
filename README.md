@@ -17,6 +17,8 @@
 - اكتشاف الملفات المكررة بواسطة تجزئة المحتوى (SHA-256).
 - إنشاء المجلدات تلقائياً.
 - معالجة آمنة لأسماء الملفات المتكررة.
+- **API احترافي باستخدام FastAPI مع قاعدة بيانات PostgreSQL و pgvector.**
+- **بحث دلالي (Semantic Search) باستخدام نماذج تضمين عربية متعددة اللغات.**
 
 ## متطلبات التشغيل
 
@@ -25,6 +27,7 @@
 - flake8 (للفحص الساكن)
 - PyMuPDF (لقراءة PDF)
 - python-docx (لقراءة DOCX)
+- PostgreSQL مع امتداد pgvector (للـ API)
 
 ## التثبيت
 
@@ -33,13 +36,40 @@
 ```bash
 conda env create -f environment.yml
 conda activate basirah-ai
+pip install -r requirements.txt
 ```
 
 أو باستخدام pip:
 
 ```bash
-pip install pytest pymupdf python-docx flake8
+pip install -r requirements.txt
 ```
+
+## التشغيل باستخدام Docker
+
+```bash
+docker compose up --build
+```
+
+سيتم تشغيل:
+- قاعدة بيانات PostgreSQL مع pgvector على المنفذ `5432`
+- الـ API باستخدام FastAPI على المنفذ `8000`
+
+## واجهة برمجة التطبيقات (API)
+
+بعد التشغيل، يمكنك زيارة وثائق التفاعلية:
+
+```
+http://localhost:8000/docs
+```
+
+### نقاط النهاية الرئيسية
+
+- `GET /health` — التحقق من حالة النظام.
+- `POST /documents/upload` — رفع مستند وفهرسته والبحث الدلالي.
+- `GET /documents/` — قائمة المستندات المفهرسة.
+- `GET /documents/search?q=...` — البحث الدلالي باللغة العربية.
+- `POST /library/organize` — رفع أرشيف ZIP وتنظيم محتواه تلقائياً.
 
 ## الاستخدام
 
