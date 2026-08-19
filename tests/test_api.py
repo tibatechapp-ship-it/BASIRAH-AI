@@ -28,6 +28,24 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
+class FakeSentenceTransformer:
+    def encode(self, text):
+        import numpy as np
+        return np.zeros(384, dtype=np.float32)
+
+
+import src.api.routers.documents as docs_router
+import src.api.routers.library as lib_router
+
+
+def _fake_model():
+    return FakeSentenceTransformer()
+
+
+docs_router.get_embedding_model = _fake_model
+lib_router.get_embedding_model = _fake_model
+
+
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
