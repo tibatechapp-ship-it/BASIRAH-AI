@@ -10,3 +10,4 @@ dependencies:
   - pymupdf
   - pip:
       - python-docx
+      - streamlit

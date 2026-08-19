@@ -185,7 +185,22 @@ def organize_library(library_path: str, recursive: bool = True) -> tuple[int, in
 
 def main() -> None:
     """Run the CLI for BASIRAH AI."""
+    import argparse
+
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+    parser = argparse.ArgumentParser(description="BASIRAH AI - Digital library organizer")
+    parser.add_argument("--gui", action="store_true", help="Launch the web-based GUI")
+    args = parser.parse_args()
+
+    if args.gui:
+        import subprocess
+        import sys
+
+        gui_path = Path(__file__).with_name("gui.py").resolve()
+        subprocess.run([sys.executable, "-m", "streamlit", "run", str(gui_path)], check=False)
+        return
+
     print("\nBASIRAH AI v0.1\n")
     library = input("أدخل مسار المكتبة: ").strip()
     try:
