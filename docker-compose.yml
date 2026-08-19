@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: basirah_db
+    environment:
+      POSTGRES_USER: basirah
+      POSTGRES_PASSWORD: basirah_secret
+      POSTGRES_DB: basirah_db
+    volumes:
+      - basirah_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U basirah -d basirah_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: basirah_api
+    environment:
+      DATABASE_URL: ******db:5432/basirah_db
+      EMBEDDING_MODEL: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  basirah_pgdata:
