@@ -8,3 +8,5 @@ dependencies:
   - flake8
   - pytest
   - pymupdf
+  - pip:
+      - python-docx

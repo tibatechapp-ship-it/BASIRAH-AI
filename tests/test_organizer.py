@@ -2,7 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from src.organizer import classify, move_file, organize_library
+from src.organizer import (
+    classify,
+    extract_text,
+    file_hash,
+    find_duplicates,
+    move_file,
+    organize_library,
+)
 
 
 def test_classify_known_category():
@@ -71,3 +78,64 @@ def test_organize_library_skips_files_already_in_target_category(tmp_path: Path)
     assert total == 0
     assert classified == 0
     assert file_path.exists()
+
+
+def test_organize_library_scans_recursively(tmp_path: Path):
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "book.txt").write_text("الصلاة والحج", encoding="utf-8")
+
+    total, classified = organize_library(str(tmp_path))
+
+    assert total == 1
+    assert classified == 1
+    assert (tmp_path / "الفقه" / "book.txt").exists()
+
+
+def test_organize_library_respects_recursive_false(tmp_path: Path):
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "book.txt").write_text("الصلاة", encoding="utf-8")
+    (tmp_path / "root.txt").write_text("الزكاة", encoding="utf-8")
+
+    total, classified = organize_library(str(tmp_path), recursive=False)
+
+    assert total == 1
+    assert classified == 1
+    assert (tmp_path / "الفقه" / "root.txt").exists()
+    assert (nested / "book.txt").exists()
+
+
+def test_file_hash_is_stable_and_distinguishes_content(tmp_path: Path):
+    file_a = tmp_path / "a.txt"
+    file_b = tmp_path / "b.txt"
+    file_c = tmp_path / "c.txt"
+    file_a.write_text("content", encoding="utf-8")
+    file_b.write_text("content", encoding="utf-8")
+    file_c.write_text("different", encoding="utf-8")
+
+    hash_a = file_hash(str(file_a))
+    hash_b = file_hash(str(file_b))
+    hash_c = file_hash(str(file_c))
+
+    assert hash_a == hash_b
+    assert hash_a != hash_c
+
+
+def test_find_duplicates_detects_duplicates(tmp_path: Path):
+    (tmp_path / "file1.txt").write_text("same", encoding="utf-8")
+    (tmp_path / "file2.txt").write_text("same", encoding="utf-8")
+    (tmp_path / "file3.txt").write_text("unique", encoding="utf-8")
+
+    duplicates = find_duplicates(str(tmp_path))
+
+    assert len(duplicates) == 1
+    duplicate_paths = list(duplicates.values())[0]
+    assert len(duplicate_paths) == 2
+    assert all("file1.txt" in path or "file2.txt" in path for path in duplicate_paths)
+
+
+def test_extract_text_ignores_unsupported_extensions(tmp_path: Path):
+    file_path = tmp_path / "book.xyz"
+    file_path.write_text("الصلاة", encoding="utf-8")
+    assert extract_text(str(file_path)) == ""
