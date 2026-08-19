@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 from pathlib import Path
 from typing import Dict, List
 
 MAX_TEXT_CHARS = 50_000
+
+
+def normalize_arabic(text: str) -> str:
+    """Normalize Arabic text for consistent matching."""
+    text = re.sub(r"[\u064B-\u065F\u0670\u0640]", "", text)  # remove tashkeel & tatweel
+    text = text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+    text = text.replace("ة", "ه")  # unify taa marbuta
+    text = text.replace("ى", "ي")  # unify alif maksura
+    return text
+
 
 CATEGORIES: Dict[str, List[str]] = {
     "القرآن": ["تفسير", "أسباب النزول", "الآية", "السورة", "القراءات"],
@@ -22,10 +33,13 @@ def read_pdf(pdf_path: str) -> str:
         import fitz  # PyMuPDF
 
         text_parts: List[str] = []
+        total_len = 0
         with fitz.open(pdf_path) as document:
             for page in document:
-                text_parts.append(page.get_text())
-                if sum(len(part) for part in text_parts) > MAX_TEXT_CHARS:
+                part = page.get_text()
+                text_parts.append(part)
+                total_len += len(part)
+                if total_len > MAX_TEXT_CHARS:
                     break
         return "".join(text_parts)
     except Exception:
@@ -52,8 +66,9 @@ def extract_text(file_path: str) -> str:
 
 def classify(text: str) -> str:
     """Classify text into one known category using keyword frequency."""
+    normalized = normalize_arabic(text)
     scores = {
-        category: sum(text.count(keyword) for keyword in keywords)
+        category: sum(normalized.count(normalize_arabic(keyword)) for keyword in keywords)
         for category, keywords in CATEGORIES.items()
     }
     best_category = max(scores, key=scores.get)
@@ -91,14 +106,23 @@ def organize_library(library_path: str) -> tuple[int, int]:
     total_files = 0
     classified_files = 0
 
-    for entry in base.iterdir():
-        if not entry.is_file() or entry.suffix.lower() not in {".pdf", ".txt"}:
-            continue
+    target_names = set(CATEGORIES.keys()) | {"غير_مصنف"}
 
+    def _is_in_category_folder(path: Path) -> bool:
+        return path.parent != base and path.parent.name in target_names
+
+    entries = [
+        entry for entry in base.rglob("*")
+        if entry.is_file() and entry.suffix.lower() in {".pdf", ".txt"} and not _is_in_category_folder(entry)
+    ]
+
+    for entry in entries:
         total_files += 1
         text = extract_text(str(entry))
         category = classify(text)
         target_folder = base / category
+        if entry.resolve().parent == target_folder.resolve():
+            continue
         move_file(str(entry), str(target_folder))
         classified_files += 1
 
@@ -108,7 +132,11 @@ def organize_library(library_path: str) -> tuple[int, int]:
 if __name__ == "__main__":
     print("\nBASIRAH AI v0.1\n")
     library = input("أدخل مسار المكتبة: ").strip()
-    total, classified = organize_library(library)
+    try:
+        total, classified = organize_library(library)
+    except ValueError as exc:
+        print(f"\nخطأ: {exc}")
+        raise SystemExit(1) from exc
     print("\n" + "=" * 40)
     print("انتهى التصنيف")
     print("=" * 40)

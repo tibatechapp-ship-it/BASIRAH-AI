@@ -53,3 +53,21 @@ def test_organize_library_rejects_invalid_path(tmp_path: Path):
     invalid = tmp_path / "missing"
     with pytest.raises(ValueError):
         organize_library(str(invalid))
+
+
+def test_classify_normalizes_tashkeel_and_variant_forms():
+    text = "التَّوْحِيدُ والإِيمَان"
+    assert classify(text) == "العقيدة"
+
+
+def test_organize_library_skips_files_already_in_target_category(tmp_path: Path):
+    category_dir = tmp_path / "الفقه"
+    category_dir.mkdir()
+    file_path = category_dir / "book.txt"
+    file_path.write_text("الصلاة", encoding="utf-8")
+
+    total, classified = organize_library(str(tmp_path))
+
+    assert total == 0
+    assert classified == 0
+    assert file_path.exists()
