@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from src.organizer import classify, move_file, organize_library
+from basirah.classification.classifier import classify
+from basirah.io.mover import move_file
+from basirah.organizer import organize_library
 
 
 def test_classify_known_category():
