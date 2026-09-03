@@ -1,28 +1,32 @@
 ```
-# Python
-__pycache__/
+# Compiled Python files
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
+__pycache__/
+
+# Dependencies
 .venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+venv/
+.env
+.env.local
+.env.*
+
+# Logs and temporary files
 *.log
-.pytest_cache/
-.hypothesis/
-.eggs/
+*.tmp
+
+# Coverage reports
+.coverage
+coverage/
+htmlcov/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build and distribution
+dist/
+build/
 *.egg-info/
-.installed.cfg
-.pep8
-.mypy_cache/
 ```

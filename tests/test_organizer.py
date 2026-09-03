@@ -9,11 +9,15 @@ from basirah.organizer import organize_library
 
 def test_classify_known_category():
     text = "الصلاة الصلاة الزكاة"
-    assert classify(text) == "الفقه"
+    category, score = classify(text)
+    assert category == "الفقه"
+    assert score > 0
 
 
 def test_classify_unknown_category():
-    assert classify("hello world") == "غير_مصنف"
+    category, score = classify("hello world")
+    assert category == "غير_مصنف"
+    assert score == 0
 
 
 def test_move_file_handles_name_collision(tmp_path: Path):
