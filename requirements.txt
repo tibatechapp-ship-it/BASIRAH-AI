@@ -1,4 +1,8 @@
+"""متطلبات المشروع - BASIRAH-AI."""
+
 flake8
 pytest>=7.0.0
 pymupdf>=1.23.0
 python-docx>=0.8.11
+ebooklib>=0.18
+beautifulsoup4>=4.12.0

@@ -65,8 +65,9 @@ def classify(
     text: str, 
     normalized: bool = True, 
     use_fixed_rules: bool = True,
-    min_confidence: float = MIN_CONFIDENCE_THRESHOLD
-) -> Tuple[str, float]:
+    min_confidence: float = MIN_CONFIDENCE_THRESHOLD,
+    return_details: bool = False,
+) -> Tuple[str, float] | ClassificationResult:
     """تصنيف النص إلى فئة معروفة باستخدام القواعد الثابتة ثم الكلمات المفتاحية.
     
     الاستراتيجية:
@@ -78,11 +79,17 @@ def classify(
         normalized: ما إذا كان يجب تطبيع النص قبل التصنيف (افتراضي: True).
         use_fixed_rules: استخدام القواعد الثابتة أولاً (افتراضي: True).
         min_confidence: الحد الأدنى للدرجة لتصنيف النص (افتراضي: 0.1).
+        return_details: إرجاع تفاصيل كاملة بدلاً من مجرد الفئة والدرجة (افتراضي: False).
 
     Returns:
-        tuple: (اسم الفئة أو 'غير_مصنف', درجة التطابق).
-              الدرجة تكون 1.0 للقواعد الثابتة، أو عدد التطابقات للكلمات المفتاحية.
+        tuple أو dict: 
+            - إذا كانت return_details=False: (اسم الفئة أو 'غير_مصنف', درجة التطابق).
+            - إذا كانت return_details=True: dict يحتوي على التفاصيل الكاملة.
+            الدرجة تكون 1.0 للقواعد الثابتة، أو عدد التطابقات للكلمات المفتاحية.
     """
+    if return_details:
+        return classify_with_details(text, normalized, use_fixed_rules, min_confidence)
+    
     if not text or not isinstance(text, str):
         logger.warning("تم استلام نص فارغ أو غير صالح للتصنيف")
         return ("غير_مصنف", 0.0)

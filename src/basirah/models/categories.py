@@ -54,6 +54,9 @@ class FileFormat(str, Enum):
     PDF = ".pdf"
     TXT = ".txt"
     DOCX = ".docx"
+    EPUB = ".epub"
+    HTML = ".html"
+    HTM = ".htm"
     UNSUPPORTED = ""
     
     @classmethod
@@ -69,6 +72,16 @@ class FileFormat(str, Enum):
     def is_supported(self) -> bool:
         """التحقق مما إذا كانت الصيغة مدعومة."""
         return self != self.UNSUPPORTED
+    
+    @property
+    def is_text_format(self) -> bool:
+        """التحقق مما إذا كانت الصيغة نصية بحتة."""
+        return self in (self.TXT, self.HTML, self.HTM)
+    
+    @property
+    def is_document_format(self) -> bool:
+        """التحقق مما إذا كانت الصيغة مستنداً معقداً."""
+        return self in (self.PDF, self.DOCX, self.EPUB)
 
 
 SUPPORTED_EXTENSIONS: List[str] = [fmt.value for fmt in FileFormat if fmt.is_supported]

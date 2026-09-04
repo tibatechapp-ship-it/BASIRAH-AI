@@ -1,6 +1,7 @@
-"""قراءة النصوص من ملفات PDF و TXT و DOCX."""
+"""قراءة النصوص من ملفات PDF و TXT و DOCX و EPUB و HTML."""
 
 import logging
+import re
 from pathlib import Path
 from typing import List, Optional
 
@@ -115,6 +116,88 @@ def read_docx(docx_path: str) -> str:
         return ""
 
 
+def read_epub(epub_path: str) -> str:
+    """قراءة النص من ملف EPUB.
+
+    Args:
+        epub_path: مسار ملف EPUB.
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
+
+        if not Path(epub_path).exists():
+            logger.error(f"ملف EPUB غير موجود: {epub_path}")
+            return ""
+
+        book = epub.read_epub(epub_path)
+        text_parts: List[str] = []
+
+        for item in book.get_items():
+            if item.get_type() == 9:  # ITEM_DOCUMENT
+                soup = BeautifulSoup(item.get_content(), 'html.parser')
+                text_parts.append(soup.get_text())
+                
+                if sum(len(part) for part in text_parts) > MAX_TEXT_CHARS:
+                    logger.warning(f"تم تجاوز الحد الأقصى للنص ({MAX_TEXT_CHARS} حرف). تم إيقاف القراءة.")
+                    break
+
+        result = "\n".join(text_parts)
+        logger.info(f"تم قراءة ملف EPUB بنجاح: {epub_path}. عدد الأحرف: {len(result)}")
+        return result
+
+    except ImportError:
+        logger.error("مكتبات ebooklib أو beautifulsoup4 غير مثبتة. قم بتثبيتها باستخدام: pip install ebooklib beautifulsoup4")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء قراءة ملف EPUB {epub_path}: {e}", exc_info=True)
+        return ""
+
+
+def read_html(html_path: str, encoding: str = "utf-8") -> str:
+    """قراءة النص من ملف HTML/HTM.
+
+    Args:
+        html_path: مسار ملف HTML.
+        encoding: الترميز المستخدم (افتراضي: utf-8).
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        from bs4 import BeautifulSoup
+
+        if not Path(html_path).exists():
+            logger.error(f"ملف HTML غير موجود: {html_path}")
+            return ""
+
+        content = Path(html_path).read_text(encoding=encoding)
+        soup = BeautifulSoup(content, 'html.parser')
+        
+        # إزالة السكريبتات والستايلات
+        for script in soup(['script', 'style']):
+            script.decompose()
+        
+        result = soup.get_text(separator='\n', strip=True)
+        
+        if len(result) > MAX_TEXT_CHARS:
+            result = result[:MAX_TEXT_CHARS]
+            logger.warning(f"تم قص النص إلى {MAX_TEXT_CHARS} حرف لملف HTML: {html_path}")
+        
+        logger.info(f"تم قراءة ملف HTML بنجاح: {html_path}. عدد الأحرف: {len(result)}")
+        return result
+
+    except ImportError:
+        logger.error("مكتبة beautifulsoup4 غير مثبتة. قم بتثبيتها باستخدام: pip install beautifulsoup4")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء قراءة ملف HTML {html_path}: {e}", exc_info=True)
+        return ""
+
+
 def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
     """استخراج النص بناءً على امتداد الملف.
 
@@ -142,6 +225,10 @@ def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
         return read_txt(file_path, encodings=encodings)
     elif file_format == FileFormat.DOCX:
         return read_docx(file_path)
+    elif file_format == FileFormat.EPUB:
+        return read_epub(file_path)
+    elif file_format in (FileFormat.HTML, FileFormat.HTM):
+        return read_html(file_path, encodings=encodings[0] if encodings else "utf-8")
     else:
         logger.warning(f"امتداد الملف غير مدعوم: {ext}")
         return ""
