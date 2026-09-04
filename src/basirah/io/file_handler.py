@@ -1,4 +1,4 @@
-"""قراءة النصوص من ملفات PDF و TXT."""
+"""قراءة النصوص من ملفات PDF و TXT و DOCX."""
 
 import logging
 from pathlib import Path
@@ -80,6 +80,41 @@ def read_txt(file_path: str, encodings: Optional[List[str]] = None) -> str:
     return ""
 
 
+def read_docx(file_path: str) -> str:
+    """قراءة النص من ملف DOCX (Word).
+
+    Args:
+        file_path: مسار ملف DOCX.
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        from docx import Document
+
+        if not Path(file_path).exists():
+            logger.error(f"ملف DOCX غير موجود: {file_path}")
+            return ""
+
+        doc = Document(file_path)
+        paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
+        result = "\n".join(paragraphs)
+        
+        if len(result) > MAX_TEXT_CHARS:
+            result = result[:MAX_TEXT_CHARS]
+            logger.warning(f"تم قص النص إلى الحد الأقصى ({MAX_TEXT_CHARS} حرف).")
+        
+        logger.info(f"تم قراءة ملف DOCX بنجاح: {file_path}. عدد الأحرف: {len(result)}")
+        return result
+    
+    except ImportError:
+        logger.error("مكتبة python-docx غير مثبتة. قم بتثبيتها باستخدام: pip install python-docx")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء قراءة ملف DOCX {file_path}: {e}", exc_info=True)
+        return ""
+
+
 def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
     """استخراج النص بناءً على امتداد الملف.
 
@@ -100,6 +135,8 @@ def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
         return read_pdf(file_path)
     elif ext == ".txt":
         return read_txt(file_path, encodings=encodings)
+    elif ext == ".docx":
+        return read_docx(file_path)
     else:
         logger.warning(f"امتداد الملف غير مدعوم: {ext}")
         return ""
