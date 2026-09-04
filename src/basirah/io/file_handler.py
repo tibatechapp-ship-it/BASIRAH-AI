@@ -28,10 +28,13 @@ def read_pdf(pdf_path: str, encoding: str = "utf-8") -> str:
             return ""
 
         text_parts: List[str] = []
+        total_chars = 0
         with fitz.open(pdf_path) as document:
             for page in document:
-                text_parts.append(page.get_text())
-                if sum(len(part) for part in text_parts) > MAX_TEXT_CHARS:
+                page_text = page.get_text()
+                text_parts.append(page_text)
+                total_chars += len(page_text)
+                if total_chars > MAX_TEXT_CHARS:
                     logger.warning(f"تم تجاوز الحد الأقصى للنص ({MAX_TEXT_CHARS} حرف). تم إيقاف القراءة.")
                     break
         

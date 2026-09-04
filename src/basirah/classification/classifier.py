@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Tuple, List, Optional
 
 from basirah.models.categories import CATEGORIES
-from basirah.utils.helpers import normalize_arabic_text
+from basirah.utils.helpers import normalize_arabic_text, count_keyword_matches
 from basirah.rules.fixed_rules import check_fixed_rules
 
 # إعداد المسجل (Logger)
@@ -94,7 +94,7 @@ def classify(text: str, normalized: bool = True, use_fixed_rules: bool = True) -
         scores: Dict[str, int] = {}
         for category, keywords in CATEGORIES.items():
             normalized_keywords = _normalize_keywords(keywords) if normalized else keywords
-            score = sum(text.count(keyword) for keyword in normalized_keywords)
+            score = count_keyword_matches(text, normalized_keywords)
             scores[category] = score
         
         # إيجاد أفضل فئة
@@ -163,7 +163,7 @@ def classify_with_details(text: str, normalized: bool = True, use_fixed_rules: b
     all_scores: Dict[str, int] = {}
     for cat, keys in CATEGORIES.items():
         normalized_keys = _normalize_keywords(keys) if normalized else keys
-        all_scores[cat] = sum(text.count(kw) for kw in normalized_keys)
+        all_scores[cat] = count_keyword_matches(text, normalized_keys)
     
     result = {
         "category": category,
