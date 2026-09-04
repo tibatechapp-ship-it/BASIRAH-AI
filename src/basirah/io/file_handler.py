@@ -1,4 +1,4 @@
-"""قراءة النصوص من ملفات PDF و TXT و DOCX."""
+"""قراءة النصوص من ملفات PDF و TXT و DOCX والصور (OCR)."""
 
 import logging
 from pathlib import Path
@@ -115,12 +115,51 @@ def read_docx(file_path: str) -> str:
         return ""
 
 
-def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
+def read_image_ocr(image_path: str, lang: str = "ara+eng") -> str:
+    """استخراج النص من صورة باستخدام OCR (Tesseract).
+
+    Args:
+        image_path: مسار ملف الصورة (PNG, JPG, JPEG, TIFF, BMP).
+        lang: لغة OCR (افتراضي: 'ara+eng' للعربية والإنجليزية).
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        import pytesseract
+        from PIL import Image
+
+        if not Path(image_path).exists():
+            logger.error(f"ملف الصورة غير موجود: {image_path}")
+            return ""
+
+        # فتح الصورة واستخراج النص
+        img = Image.open(image_path)
+        text = pytesseract.image_to_string(img, lang=lang)
+        
+        # تطبيق الحد الأقصى للحجم
+        if len(text) > MAX_TEXT_CHARS:
+            text = text[:MAX_TEXT_CHARS]
+            logger.warning(f"تم قص النص إلى الحد الأقصى ({MAX_TEXT_CHARS} حرف).")
+        
+        logger.info(f"تم استخراج النص من الصورة بنجاح: {image_path}. عدد الأحرف: {len(text)}")
+        return text
+    
+    except ImportError as e:
+        logger.error(f"مكتبة مطلوبة غير مثبتة: {e}. قم بتثبيت pytesseract و Pillow وتثبيت Tesseract على النظام.")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء استخراج النص من الصورة {image_path}: {e}", exc_info=True)
+        return ""
+
+
+def extract_text(file_path: str, encodings: Optional[List[str]] = None, ocr_lang: str = "ara+eng") -> str:
     """استخراج النص بناءً على امتداد الملف.
 
     Args:
         file_path: مسار الملف.
         encodings: قائمة الترميزات لقراءة ملفات النص.
+        ocr_lang: لغة OCR لملفات الصور (افتراضي: 'ara+eng').
 
     Returns:
         النص المستخرج أو سلسلة فارغة إذا كان الامتداد غير مدعوم.
@@ -137,6 +176,8 @@ def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
         return read_txt(file_path, encodings=encodings)
     elif ext == ".docx":
         return read_docx(file_path)
+    elif ext in [".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"]:
+        return read_image_ocr(file_path, lang=ocr_lang)
     else:
         logger.warning(f"امتداد الملف غير مدعوم: {ext}")
         return ""
