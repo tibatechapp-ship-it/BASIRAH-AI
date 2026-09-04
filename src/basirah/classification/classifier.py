@@ -3,7 +3,12 @@
 import logging
 from typing import Dict, Tuple, List, Optional
 
-from basirah.models.categories import CATEGORIES
+from basirah.models.categories import (
+    CATEGORIES, 
+    CategoryType, 
+    ClassificationResult,
+    MIN_CONFIDENCE_THRESHOLD
+)
 from basirah.utils.helpers import normalize_arabic_text
 from basirah.rules.fixed_rules import check_fixed_rules
 
@@ -14,15 +19,17 @@ logger = logging.getLogger(__name__)
 class TextClassifier:
     """مصنف النصوص العربية الهجين (قواعد ثابتة + كلمات مفتاحية)."""
     
-    def __init__(self, use_fixed_rules: bool = True):
+    def __init__(self, use_fixed_rules: bool = True, min_confidence: float = MIN_CONFIDENCE_THRESHOLD):
         """تهيئة المصنف.
         
         Args:
             use_fixed_rules: استخدام القواعد الثابتة للتحقق الأولي (افتراضي: True).
+            min_confidence: الحد الأدنى للدرجة لتصنيف النص (افتراضي: 0.1).
         """
         self.categories = CATEGORIES
         self.use_fixed_rules = use_fixed_rules
-        logger.info(f"تم تهيئة مصنف النصوص (استخدام القواعد الثابتة: {use_fixed_rules})")
+        self.min_confidence = min_confidence
+        logger.info(f"تم تهيئة مصنف النصوص (استخدام القواعد الثابتة: {use_fixed_rules}, الحد الأدنى للثقة: {min_confidence})")
     
     def classify(self, text: str, normalized: bool = True) -> Tuple[str, float]:
         """تصنيف النص إلى فئة معروفة.
@@ -34,9 +41,9 @@ class TextClassifier:
         Returns:
             tuple: (اسم الفئة، درجة التطابق).
         """
-        return classify(text, normalized, self.use_fixed_rules)
+        return classify(text, normalized, self.use_fixed_rules, self.min_confidence)
     
-    def classify_with_details(self, text: str, normalized: bool = True) -> Dict:
+    def classify_with_details(self, text: str, normalized: bool = True) -> ClassificationResult:
         """تصنيف النص مع إرجاع تفاصيل كاملة.
         
         Args:
@@ -46,7 +53,7 @@ class TextClassifier:
         Returns:
             dict: يحتوي على الفئة، الدرجة، وجميع الدرجات التفصيلية.
         """
-        return classify_with_details(text, normalized, self.use_fixed_rules)
+        return classify_with_details(text, normalized, self.use_fixed_rules, self.min_confidence)
 
 
 def _normalize_keywords(keywords: List[str]) -> List[str]:
@@ -54,7 +61,13 @@ def _normalize_keywords(keywords: List[str]) -> List[str]:
     return [normalize_arabic_text(kw) for kw in keywords]
 
 
-def classify(text: str, normalized: bool = True, use_fixed_rules: bool = True) -> Tuple[str, float]:
+def classify(
+    text: str, 
+    normalized: bool = True, 
+    use_fixed_rules: bool = True,
+    min_confidence: float = MIN_CONFIDENCE_THRESHOLD,
+    return_details: bool = False,
+) -> Tuple[str, float] | ClassificationResult:
     """تصنيف النص إلى فئة معروفة باستخدام القواعد الثابتة ثم الكلمات المفتاحية.
     
     الاستراتيجية:
@@ -65,11 +78,18 @@ def classify(text: str, normalized: bool = True, use_fixed_rules: bool = True) -
         text: النص المراد تصنيفه.
         normalized: ما إذا كان يجب تطبيع النص قبل التصنيف (افتراضي: True).
         use_fixed_rules: استخدام القواعد الثابتة أولاً (افتراضي: True).
+        min_confidence: الحد الأدنى للدرجة لتصنيف النص (افتراضي: 0.1).
+        return_details: إرجاع تفاصيل كاملة بدلاً من مجرد الفئة والدرجة (افتراضي: False).
 
     Returns:
-        tuple: (اسم الفئة أو 'غير_مصنف', درجة التطابق).
-              الدرجة تكون 1.0 للقواعد الثابتة، أو عدد التطابقات للكلمات المفتاحية.
+        tuple أو dict: 
+            - إذا كانت return_details=False: (اسم الفئة أو 'غير_مصنف', درجة التطابق).
+            - إذا كانت return_details=True: dict يحتوي على التفاصيل الكاملة.
+            الدرجة تكون 1.0 للقواعد الثابتة، أو عدد التطابقات للكلمات المفتاحية.
     """
+    if return_details:
+        return classify_with_details(text, normalized, use_fixed_rules, min_confidence)
+    
     if not text or not isinstance(text, str):
         logger.warning("تم استلام نص فارغ أو غير صالح للتصنيف")
         return ("غير_مصنف", 0.0)
@@ -91,7 +111,7 @@ def classify(text: str, normalized: bool = True, use_fixed_rules: bool = True) -
             logger.debug("تم تطبيع النص قبل التصنيف")
         
         # حساب درجات كل فئة مع تطبيع الكلمات المفتاحية
-        scores: Dict[str, int] = {}
+        scores: Dict[CategoryType, int] = {}
         for category, keywords in CATEGORIES.items():
             normalized_keywords = _normalize_keywords(keywords) if normalized else keywords
             score = sum(text.count(keyword) for keyword in normalized_keywords)
@@ -101,31 +121,39 @@ def classify(text: str, normalized: bool = True, use_fixed_rules: bool = True) -
         best_category = max(scores, key=scores.get)
         best_score = scores[best_category]
         
-        logger.info(f"نتائج التصنيف بالكلمات المفتاحية: {best_category} بدرجة {best_score}")
+        logger.info(f"نتائج التصنيف بالكلمات المفتاحية: {best_category.value} بدرجة {best_score}")
         logger.debug(f"جميع الدرجات: {scores}")
         
         if best_score == 0:
             logger.info("لم يتم العثور على أي تطابق للكلمات المفتاحية")
             return ("غير_مصنف", 0.0)
         
-        # تحويل الدرجة إلى نسبة مئوية تقريبية للتوحيد
-        # نفترض أن 10 تطابقات فأكثر تعطي دقة عالية
+        # التحقق من الحد الأدنى للثقة
         confidence_score = min(best_score / 10.0, 1.0)
+        if confidence_score < min_confidence:
+            logger.info(f"الدرجة {confidence_score} أقل من الحد الأدنى {min_confidence}")
+            return ("غير_مصنف", confidence_score)
         
-        return (best_category, confidence_score)
+        return (best_category.value, confidence_score)
     
     except Exception as e:
         logger.error(f"حدث خطأ أثناء تصنيف النص: {e}", exc_info=True)
         return ("غير_مصنف", 0.0)
 
 
-def classify_with_details(text: str, normalized: bool = True, use_fixed_rules: bool = True) -> Dict:
+def classify_with_details(
+    text: str, 
+    normalized: bool = True, 
+    use_fixed_rules: bool = True,
+    min_confidence: float = MIN_CONFIDENCE_THRESHOLD
+) -> ClassificationResult:
     """تصنيف النص مع إرجاع تفاصيل كاملة عن النتائج.
 
     Args:
         text: النص المراد تصنيفه.
         normalized: ما إذا كان يجب تطبيع النص قبل التصنيف.
         use_fixed_rules: استخدام القواعد الثابتة أولاً.
+        min_confidence: الحد الأدنى للدرجة لتصنيف النص.
 
     Returns:
         dict: يحتوي على الفئة، الدرجة، وجميع الدرجات التفصيلية، ومنهجية التصنيف.
@@ -142,10 +170,10 @@ def classify_with_details(text: str, normalized: bool = True, use_fixed_rules: b
             from basirah.rules.fixed_rules import get_rule_explanation
             explanations = get_rule_explanation(text)
         
-        result = {
+        result: ClassificationResult = {
             "category": category,
             "score": confidence,
-            "all_scores": {cat: 0 for cat in CATEGORIES.keys()},
+            "all_scores": {cat.value: 0 for cat in CATEGORIES.keys()},
             "is_classified": True,
             "method": "fixed_rules",
             "explanations": explanations
@@ -154,13 +182,13 @@ def classify_with_details(text: str, normalized: bool = True, use_fixed_rules: b
         return result
     
     # استخدام الكلمات المفتاحية
-    category, score = classify(text, normalized, use_fixed_rules=False)
+    category, score = classify(text, normalized, use_fixed_rules=False, min_confidence=min_confidence)
     
     # إعادة حساب جميع الدرجات للعرض
     if normalized:
         text = normalize_arabic_text(text)
     
-    all_scores: Dict[str, int] = {}
+    all_scores: Dict[CategoryType, int] = {}
     for cat, keys in CATEGORIES.items():
         normalized_keys = _normalize_keywords(keys) if normalized else keys
         all_scores[cat] = sum(text.count(kw) for kw in normalized_keys)
@@ -168,7 +196,7 @@ def classify_with_details(text: str, normalized: bool = True, use_fixed_rules: b
     result = {
         "category": category,
         "score": score,
-        "all_scores": all_scores,
+        "all_scores": {cat.value: sc for cat, sc in all_scores.items()},
         "is_classified": category != "غير_مصنف",
         "method": "keywords",
         "explanations": []
