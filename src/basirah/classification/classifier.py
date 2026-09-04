@@ -10,6 +10,39 @@ from basirah.utils.helpers import normalize_arabic_text
 logger = logging.getLogger(__name__)
 
 
+class TextClassifier:
+    """مصنف النصوص العربية."""
+    
+    def __init__(self):
+        """تهيئة المصنف."""
+        self.categories = CATEGORIES
+        logger.info("تم تهيئة مصنف النصوص")
+    
+    def classify(self, text: str, normalized: bool = True) -> Tuple[str, int]:
+        """تصنيف النص إلى فئة معروفة.
+        
+        Args:
+            text: النص المراد تصنيفه.
+            normalized: ما إذا كان يجب تطبيع النص قبل التصنيف.
+            
+        Returns:
+            tuple: (اسم الفئة، درجة التطابق).
+        """
+        return classify(text, normalized)
+    
+    def classify_with_details(self, text: str, normalized: bool = True) -> Dict:
+        """تصنيف النص مع إرجاع تفاصيل كاملة.
+        
+        Args:
+            text: النص المراد تصنيفه.
+            normalized: ما إذا كان يجب تطبيع النص قبل التصنيف.
+            
+        Returns:
+            dict: يحتوي على الفئة، الدرجة، وجميع الدرجات التفصيلية.
+        """
+        return classify_with_details(text, normalized)
+
+
 def _normalize_keywords(keywords: List[str]) -> List[str]:
     """تطبيع قائمة الكلمات المفتاحية."""
     return [normalize_arabic_text(kw) for kw in keywords]
