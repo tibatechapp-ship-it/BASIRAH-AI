@@ -21,7 +21,7 @@ src/
     │   └── classifier.py    # مصنف النصوص
     ├── io/                  # وحدة الإدخال والإخراج
     │   ├── __init__.py
-    │   ├── file_handler.py  # قراءة PDF و TXT
+    │   ├── file_handler.py  # قراءة PDF و TXT و DOCX
     │   └── mover.py         # نقل الملفات
     ├── models/              # نماذج البيانات
     │   ├── __init__.py
@@ -34,9 +34,12 @@ src/
 ## المميزات
 
 - تصنيف المحتوى حسب الموضوع (القرآن، العقيدة، الفقه، السيرة)
-- دعم ملفات PDF و TXT
+- دعم ملفات PDF و TXT و DOCX والصور (OCR)
+- دعم OCR للصور والملفات الممسوحة ضوئياً (العربية والإنجليزية)
+- تحسين دقة التصنيف باستخدام التعلم الآلي (Naive Bayes + TF-IDF)
 - إنشاء المجلدات تلقائياً
 - معالجة التصادم في أسماء الملفات
+- حفظ وتحميل نماذج ML المدربة
 
 ## التثبيت
 
@@ -63,6 +66,7 @@ PYTHONPATH=src python -m basirah.cli
 
 ```python
 from basirah import organize_library, classify
+from basirah.classification import MLTextClassifier, train_from_samples
 
 # تنظيم مكتبة
 total, classified = organize_library("/path/to/library")
@@ -70,6 +74,20 @@ total, classified = organize_library("/path/to/library")
 # تصنيف نص
 category = classify("الصلاة والزكاة")
 print(category)  # الفقه
+
+# استخدام التعلم الآلي للتصنيف
+samples = [
+    {"text": "كتاب عن الفقه الإسلامي", "label": "فقه"},
+    {"text": "حديث شريف عن النبي", "label": "حديث"},
+]
+ml_classifier = train_from_samples(samples)
+category_ml, confidence = ml_classifier.classify("هذا كتاب فقهي")
+print(f"التصنيف: {category_ml}, الدقة: {confidence}")
+
+# حفظ وتحميل النموذج
+ml_classifier.save_model("model.pkl")
+new_classifier = MLTextClassifier()
+new_classifier.load_model("model.pkl")
 ```
 
 ## الاختبارات
@@ -87,21 +105,23 @@ PYTHONPATH=src pytest tests/ -v
 - [x] إنشاء المجلدات تلقائياً
 - [x] إعادة هيكلة الكود
 
-### الإصدار 0.2
+### الإصدار 0.2 ✓
 
-- [ ] إزالة المكرر
-- [ ] دعم DOCX
+- [x] إزالة المكرر
+- [x] دعم DOCX
+- [x] دعم OCR للصور (PNG, JPG, TIFF, BMP, GIF)
+- [x] تحسين دقة التصنيف بالتعلم الآلي
 - [ ] تقارير وإحصائيات
 
 ### الإصدار 0.3
 
 - [ ] واجهة رسومية
+- [ ] تدريب نماذج ML على بيانات إسلامية موسعة
 
 ### الإصدار 1.0
 
 - [ ] اكتشاف العلاقات بين الملفات
 - [ ] البحث الدلالي
-- [ ] OCR للكتب المصورة
 - [ ] تطبيق سطح مكتب
 - [ ] تطبيق أندرويد
 
