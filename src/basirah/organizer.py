@@ -1,4 +1,4 @@
-"""المنظم الرئيسي للمكتبة."""
+"""تنظيم الملفات في المكتبة الرقمية."""
 
 import logging
 from pathlib import Path
@@ -7,6 +7,7 @@ from typing import Tuple, Optional, List
 from basirah.classification.classifier import classify
 from basirah.io.file_handler import extract_text
 from basirah.io.mover import move_file
+from basirah.models.categories import SUPPORTED_EXTENSIONS
 
 # إعداد المسجل (Logger)
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def organize_library(
     classified_files = 0
 
     for entry in base.iterdir():
-        if not entry.is_file() or entry.suffix.lower() not in {".pdf", ".txt"}:
+        if not entry.is_file() or entry.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
         total_files += 1

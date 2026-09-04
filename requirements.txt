@@ -1,3 +1,4 @@
 flake8
 pytest>=7.0.0
 pymupdf>=1.23.0
+python-docx>=0.8.11
