@@ -11,6 +11,10 @@ dependencies:
   - pip:
       - python-docx
       - streamlit
+      - Pillow>=9.0.0
+      - scikit-learn>=1.0.0
+      - ebooklib>=0.18
+      - beautifulsoup4>=4.12.0
       - fastapi==0.115.0
       - sqlalchemy==2.0.35
       - pgvector==0.3.6

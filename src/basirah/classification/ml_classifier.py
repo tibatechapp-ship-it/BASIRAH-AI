@@ -18,7 +18,11 @@ try:
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import LabelEncoder
     ML_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover - بيئة بدون scikit-learn
+    TfidfVectorizer = None
+    MultinomialNB = None
+    Pipeline = None
+    LabelEncoder = None
     ML_AVAILABLE = False
     logger.warning("مكتبة scikit-learn غير متوفرة. سيتم استخدام طريقة الكلمات المفتاحية فقط.")
 

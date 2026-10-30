@@ -1,4 +1,4 @@
-"""متطلبات المشروع - BASIRAH-AI."""
+# BASIRAH-AI - متطلبات المشروع
 
 # Core / classification
 flake8
