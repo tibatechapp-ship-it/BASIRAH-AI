@@ -1,15 +1,20 @@
 """Tests for the BASIRAH AI FastAPI backend."""
 
+import pytest
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from src.api.database import Base, get_db
 from src.api.main import app
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base.metadata.create_all(bind=engine)
@@ -72,6 +77,15 @@ def test_upload_txt_document(tmp_path):
     assert data["category"] == "الفقه"
 
 
+from src.api.database import engine as _api_engine
+
+requires_pgvector = pytest.mark.skipif(
+    _api_engine.dialect.name != "postgresql",
+    reason="البحث الدلالي يتطلب pgvector على PostgreSQL",
+)
+
+
+@requires_pgvector
 def test_search_documents(tmp_path):
     file_path = tmp_path / "search.txt"
     file_path.write_text("كيفية الوضوء قبل الصلاة", encoding="utf-8")

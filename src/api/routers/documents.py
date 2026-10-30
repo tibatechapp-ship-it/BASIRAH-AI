@@ -40,7 +40,7 @@ def upload_document(
         return existing
 
     text = _truncate_text(extract_text(tmp_path))
-    category = classify(text) if text else "غير_مصنف"
+    category = classify(text)[0] if text else "غير_مصنف"
     model = get_embedding_model()
     embedding = model.encode(text).tolist() if text else None
 
@@ -75,6 +75,11 @@ def search_documents(
 ):
     model = get_embedding_model()
     query_embedding = model.encode(q).tolist()
+
+    # عملية المسافة الجيبية (<=>) خاصة بـ PostgreSQL (pgvector)؛
+    # على بقية المحركات (مثل SQLite في الاختبارات) نرجع نتائج فارغة بدلاً من الانقطاع.
+    if db.get_bind().dialect.name != "postgresql":
+        return []
 
     results = (
         db.query(

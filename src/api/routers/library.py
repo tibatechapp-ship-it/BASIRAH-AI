@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 from src.api.database import get_db
 from src.api.dependencies import extract_text, file_hash, get_embedding_model
 from src.api.models import Document
-from src.organizer import CATEGORIES, classify, move_file
+from basirah.classification import classify
+from basirah.io import move_file
+from basirah.models.categories import CATEGORIES
 
 router = APIRouter(prefix="/library", tags=["library"])
 
@@ -46,7 +48,7 @@ def organize_library(
         for entry in entries:
             total += 1
             text = extract_text(str(entry))[:50_000]
-            category = classify(text) if text else "غير_مصنف"
+            category = classify(text)[0] if text else "غير_مصنف"
             target_folder = extract_dir / category
             move_file(str(entry), str(target_folder))
 

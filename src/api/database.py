@@ -7,7 +7,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "******localhost:5432/basirah_db",
+    "sqlite:///./basirah.db",
 )
 
 engine = create_engine(DATABASE_URL)

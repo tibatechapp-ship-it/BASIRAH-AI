@@ -7,7 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.organizer import find_duplicates, organize_library
+from basirah.organizer import find_duplicates, organize_library
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 
