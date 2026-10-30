@@ -1,5 +1,6 @@
 """متطلبات المشروع - BASIRAH-AI."""
 
+# Core / classification
 flake8
 pytest>=7.0.0
 pymupdf>=1.23.0
@@ -9,3 +10,19 @@ Pillow>=9.0.0
 scikit-learn>=1.0.0
 ebooklib>=0.18
 beautifulsoup4>=4.12.0
+
+# Web API (FastAPI backend + semantic search)
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+pgvector==0.3.6
+sentence-transformers==3.1.1
+numpy>=1.26.0
+pydantic==2.9.2
+pydantic-settings==2.5.2
+alembic==1.13.3
+httpx==0.27.2
+
+# Web GUI
+streamlit>=1.39.0

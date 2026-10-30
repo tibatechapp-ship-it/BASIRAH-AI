@@ -1,5 +1,6 @@
 """دوال مساعدة عامة."""
 
+import hashlib
 import logging
 import re
 from pathlib import Path
@@ -110,3 +111,23 @@ def count_keyword_matches(text: str, keywords: list) -> int:
     
     return total_matches
 
+
+def file_hash(file_path: str, block_size: int = 65536) -> str:
+    """حساب بصمة SHA-256 لمحتوى ملف.
+
+    Args:
+        file_path: مسار الملف.
+        block_size: حجم كتلة القراءة بالبايت.
+
+    Returns:
+        البصمة السداسية عشرية أو سلسلة فارغة في حالة الخطأ.
+    """
+    hasher = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as file:
+            for chunk in iter(lambda: file.read(block_size), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception as exc:
+        logger.warning("Failed to hash file %s: %s", file_path, exc)
+        return ""

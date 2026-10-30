@@ -2,11 +2,12 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple, Optional, List
+from typing import Dict, Tuple, Optional, List
 
 from basirah.classification.classifier import classify
 from basirah.io.file_handler import extract_text
 from basirah.io.mover import move_file
+from basirah.utils.helpers import file_hash
 from basirah.models.categories import SUPPORTED_EXTENSIONS
 from basirah.reports.generator import ReportGenerator, FileStats
 
@@ -19,6 +20,7 @@ def organize_library(
     encodings: Optional[List[str]] = None,
     normalize_text: bool = True,
     report_generator: Optional[ReportGenerator] = None,
+    recursive: bool = False,
 ) -> Tuple[int, int]:
     """تنظيم الملفات المدعومة في مسار مكتبة.
 
@@ -49,7 +51,8 @@ def organize_library(
     total_files = 0
     classified_files = 0
 
-    for entry in base.iterdir():
+    iterator = base.rglob("*") if recursive else base.iterdir()
+    for entry in iterator:
         if not entry.is_file() or entry.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
@@ -100,3 +103,28 @@ def organize_library(
 
     logger.info(f"اكتمل التنظيم: {classified_files}/{total_files} ملف تم تصنيفه")
     return total_files, classified_files
+
+
+def find_duplicates(library_path: str) -> Dict[str, List[str]]:
+    """البحث عن الملفات المكررة داخل المكتبة عبر بصمة المحتوى.
+
+    Args:
+        library_path: مسار جذر المكتبة.
+
+    Returns:
+        dict: كل مفتاح هو بصمة ملف، وقيمته قائمة المسارات المكررة (أكثر من ملف واحد).
+    """
+    hashes: Dict[str, List[str]] = {}
+    root = Path(library_path)
+    if not root.exists() or not root.is_dir():
+        return {}
+
+    for entry in root.rglob("*"):
+        if not entry.is_file() or entry.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+        digest = file_hash(str(entry))
+        if not digest:
+            continue
+        hashes.setdefault(digest, []).append(str(entry))
+
+    return {digest: paths for digest, paths in hashes.items() if len(paths) > 1}

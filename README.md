@@ -156,6 +156,40 @@ text = extract_text("scanned_page.png")  # OCR
 text = read_docx("document.docx")
 ```
 
+## التشغيل باستخدام Docker
+
+```bash
+docker compose up --build
+```
+
+سيتم تشغيل:
+- قاعدة بيانات PostgreSQL مع pgvector على المنفذ `5432`
+- الـ API باستخدام FastAPI على المنفذ `8000`
+
+## واجهة برمجة التطبيقات (API)
+
+بعد التشغيل، يمكنك زيارة وثائق التفاعلية:
+
+```
+http://localhost:8000/docs
+```
+
+### نقاط النهاية الرئيسية
+
+- `GET /health` — التحقق من حالة النظام.
+- `POST /documents/upload` — رفع مستند وفهرسته والبحث الدلالي.
+- `GET /documents/` — قائمة المستندات المفهرسة.
+- `GET /documents/search?q=...` — البحث الدلالي باللغة العربية.
+- `POST /library/organize` — رفع أرشيف ZIP وتنظيم محتواه تلقائياً.
+
+### الواجهة الرسومية عبر الويب (Streamlit)
+
+```bash
+streamlit run src/gui.py
+```
+
+تفتح واجهة ويب تدعم اللغة العربية واتجاه RTL، وتتيح رفع مكتبة مضغوطة (ZIP) وتنظيمها تلقائياً، واكتشاف الملفات المكررة، وعرض هيكل المكتبة المصنفة.
+
 ## الاختبارات
 
 ```bash
