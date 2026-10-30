@@ -12,7 +12,7 @@ ebooklib>=0.18
 beautifulsoup4>=4.12.0
 
 # Web API (FastAPI backend + semantic search)
-fastapi==0.115.0
+fastapi==0.162.0
 python-multipart>=0.0.9
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.35
