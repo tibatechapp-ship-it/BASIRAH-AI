@@ -3,7 +3,7 @@
 # Core / classification
 flake8
 pytest>=7.0.0
-pymupdf>=1.23.0
+pymupdf>=2.0
 python-docx>=1.2.0
 pytesseract>=0.3.13
 Pillow>=9.0.0
