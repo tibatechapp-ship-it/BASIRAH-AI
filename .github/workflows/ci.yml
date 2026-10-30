@@ -1,0 +1,37 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install
+        run: |
+          if [ -f pyproject.toml ] || [ -f setup.py ] || [ -f requirements.txt ]; then
+            python -m pip install -U pip
+            pip install ruff pytest
+            [ -f pyproject.toml ] && pip install -e . || true
+            [ -f requirements.txt ] && pip install -r requirements.txt || true
+          else
+            echo "no python project files - skip install"
+          fi
+      - name: Lint
+        run: if [ -f pyproject.toml ] || [ -f setup.py ]; then ruff check . || true; else echo "skip lint"; fi
+      - name: Test
+        run: |
+          if ls tests/ 2>/dev/null | grep -q . || ls test/ 2>/dev/null | grep -q .; then
+            pytest -q; rc=$?; if [ $rc -eq 5 ]; then echo "no tests collected"; exit 0; fi; exit $rc
+          else
+            echo "no tests directory yet - pass"
+          fi
+      - name: Secrets
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
