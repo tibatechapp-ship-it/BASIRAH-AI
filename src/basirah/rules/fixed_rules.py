@@ -6,6 +6,8 @@ import re
 import logging
 from typing import Optional, Tuple, List
 
+from basirah.models.categories import CategoryType, FIXED_RULE_CATEGORIES
+
 logger = logging.getLogger(__name__)
 
 # أنماط قطعية للقرآن الكريم
@@ -64,6 +66,15 @@ AQEEDAH_PATTERNS = [
     r'\bالشرك\s+الأكبر',
 ]
 
+# ربط الأنماط بالفئات
+CATEGORY_PATTERNS_MAP: List[Tuple[CategoryType, List[str]]] = [
+    (CategoryType.QURAN, QURAN_PATTERNS),
+    (CategoryType.HADITH, HADITH_PATTERNS),
+    (CategoryType.FIQH, FIQH_PATTERNS),
+    (CategoryType.SEERAH, SEERAH_PATTERNS),
+    (CategoryType.AQEEDAH, AQEEDAH_PATTERNS),
+]
+
 
 def check_fixed_rules(text: str) -> Optional[Tuple[str, float]]:
     """
@@ -84,20 +95,12 @@ def check_fixed_rules(text: str) -> Optional[Tuple[str, float]]:
     # تنظيف بسيط للنص للفحص (إزالة مسافات زائدة فقط)
     clean_text = " ".join(text.split())
 
-    rules_checks = [
-        ("القرآن الكريم", QURAN_PATTERNS),
-        ("الحديث الشريف", HADITH_PATTERNS),
-        ("الفقه الإسلامي", FIQH_PATTERNS),
-        ("السيرة والتاريخ", SEERAH_PATTERNS),
-        ("العقيدة", AQEEDAH_PATTERNS),
-    ]
-
-    for category, patterns in rules_checks:
+    for category, patterns in CATEGORY_PATTERNS_MAP:
         for pattern in patterns:
             try:
                 if re.search(pattern, clean_text, re.IGNORECASE | re.UNICODE):
-                    logger.debug(f"تم تطبيق قاعدة ثابتة: '{pattern}' -> الفئة: {category}")
-                    return (category, 1.0)  # دقة 100%
+                    logger.debug(f"تم تطبيق قاعدة ثابتة: '{pattern}' -> الفئة: {category.value}")
+                    return (category.value, 1.0)  # دقة 100%
             except re.error as e:
                 logger.error(f"خطأ في تعبير نمطي '{pattern}': {e}")
                 continue
@@ -113,17 +116,9 @@ def get_rule_explanation(text: str) -> List[str]:
     explanations = []
     clean_text = " ".join(text.split())
     
-    rules_map = {
-        "القرآن الكريم": QURAN_PATTERNS,
-        "الحديث الشريف": HADITH_PATTERNS,
-        "الفقه الإسلامي": FIQH_PATTERNS,
-        "السيرة والتاريخ": SEERAH_PATTERNS,
-        "العقيدة": AQEEDAH_PATTERNS,
-    }
-
-    for category, patterns in rules_map.items():
+    for category, patterns in CATEGORY_PATTERNS_MAP:
         for pattern in patterns:
             if re.search(pattern, clean_text, re.IGNORECASE | re.UNICODE):
-                explanations.append(f"وجود نمط '{pattern}' يشير إلى {category}")
+                explanations.append(f"وجود نمط '{pattern}' يشير إلى {category.value}")
     
     return explanations
