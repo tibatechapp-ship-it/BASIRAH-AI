@@ -63,11 +63,14 @@ def organize_library(
                 logger.warning(f"لم يتم استخراج أي نص من الملف: {entry.name}")
                 continue
             
-            category, score, all_scores, is_classified, method, explanations = classify(
+            details = classify(
                 text, 
                 normalized=normalize_text,
                 return_details=True
             )
+            category = details["category"]
+            score = details["score"]
+            method = details["method"]
             
             if category == "غير_مصنف":
                 logger.warning(f"تعذر تصنيف الملف: {entry.name}")

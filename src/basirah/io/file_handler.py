@@ -1,7 +1,6 @@
-"""قراءة النصوص من ملفات PDF و TXT و DOCX و EPUB و HTML."""
+"""قراءة النصوص من ملفات PDF و TXT و DOCX و EPUB و HTML والصور (OCR)."""
 
 import logging
-import re
 from pathlib import Path
 from typing import List, Optional
 
@@ -82,7 +81,7 @@ def read_txt(file_path: str, encodings: Optional[List[str]] = None) -> str:
 
 
 def read_docx(docx_path: str) -> str:
-    """قراءة النص من ملف DOCX.
+    """قراءة النص من ملف DOCX (Word).
 
     Args:
         docx_path: مسار ملف DOCX.
@@ -113,6 +112,44 @@ def read_docx(docx_path: str) -> str:
         return ""
     except Exception as e:
         logger.error(f"حدث خطأ أثناء قراءة ملف DOCX {docx_path}: {e}", exc_info=True)
+        return ""
+
+
+def read_image_ocr(image_path: str, lang: str = "ara+eng") -> str:
+    """استخراج النص من صورة باستخدام OCR (Tesseract).
+
+    Args:
+        image_path: مسار ملف الصورة (PNG, JPG, JPEG, TIFF, BMP, GIF).
+        lang: لغة OCR (افتراضي: 'ara+eng' للعربية والإنجليزية).
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        import pytesseract
+        from PIL import Image
+
+        if not Path(image_path).exists():
+            logger.error(f"ملف الصورة غير موجود: {image_path}")
+            return ""
+
+        # فتح الصورة واستخراج النص
+        img = Image.open(image_path)
+        text = pytesseract.image_to_string(img, lang=lang)
+        
+        # تطبيق الحد الأقصى للحجم
+        if len(text) > MAX_TEXT_CHARS:
+            text = text[:MAX_TEXT_CHARS]
+            logger.warning(f"تم قص النص إلى الحد الأقصى ({MAX_TEXT_CHARS} حرف).")
+        
+        logger.info(f"تم استخراج النص من الصورة بنجاح: {image_path}. عدد الأحرف: {len(text)}")
+        return text
+    
+    except ImportError as e:
+        logger.error(f"مكتبة مطلوبة غير مثبتة: {e}. قم بتثبيت pytesseract و Pillow وتثبيت Tesseract على النظام.")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء استخراج النص من الصورة {image_path}: {e}", exc_info=True)
         return ""
 
 
@@ -198,12 +235,13 @@ def read_html(html_path: str, encoding: str = "utf-8") -> str:
         return ""
 
 
-def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
+def extract_text(file_path: str, encodings: Optional[List[str]] = None, ocr_lang: str = "ara+eng") -> str:
     """استخراج النص بناءً على امتداد الملف.
 
     Args:
         file_path: مسار الملف.
         encodings: قائمة الترميزات لقراءة ملفات النص.
+        ocr_lang: لغة OCR لملفات الصور (افتراضي: 'ara+eng').
 
     Returns:
         النص المستخرج أو سلسلة فارغة إذا كان الامتداد غير مدعوم.
@@ -229,6 +267,8 @@ def extract_text(file_path: str, encodings: Optional[List[str]] = None) -> str:
         return read_epub(file_path)
     elif file_format in (FileFormat.HTML, FileFormat.HTM):
         return read_html(file_path, encodings=encodings[0] if encodings else "utf-8")
+    elif file_format in FileFormat.image_formats():
+        return read_image_ocr(file_path, lang=ocr_lang)
     else:
         logger.warning(f"امتداد الملف غير مدعوم: {ext}")
         return ""

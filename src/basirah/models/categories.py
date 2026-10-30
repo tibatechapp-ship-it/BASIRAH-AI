@@ -57,6 +57,12 @@ class FileFormat(str, Enum):
     EPUB = ".epub"
     HTML = ".html"
     HTM = ".htm"
+    PNG = ".png"
+    JPG = ".jpg"
+    JPEG = ".jpeg"
+    TIFF = ".tiff"
+    BMP = ".bmp"
+    GIF = ".gif"
     UNSUPPORTED = ""
     
     @classmethod
@@ -82,6 +88,11 @@ class FileFormat(str, Enum):
     def is_document_format(self) -> bool:
         """التحقق مما إذا كانت الصيغة مستنداً معقداً."""
         return self in (self.PDF, self.DOCX, self.EPUB)
+
+    @classmethod
+    def image_formats(cls) -> tuple:
+        """الصيغ المصوّرة المدعومة عبر OCR."""
+        return (cls.PNG, cls.JPG, cls.JPEG, cls.TIFF, cls.BMP, cls.GIF)
 
 
 SUPPORTED_EXTENSIONS: List[str] = [fmt.value for fmt in FileFormat if fmt.is_supported]
