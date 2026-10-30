@@ -1,10 +1,10 @@
-"""قراءة النصوص من ملفات PDF و TXT و DOCX والصور (OCR)."""
+"""قراءة النصوص من ملفات PDF و TXT و DOCX و EPUB و HTML والصور (OCR)."""
 
 import logging
 from pathlib import Path
 from typing import List, Optional
 
-from basirah.models.categories import MAX_TEXT_CHARS
+from basirah.models.categories import MAX_TEXT_CHARS, FileFormat
 
 # إعداد المسجل (Logger)
 logger = logging.getLogger(__name__)
@@ -80,11 +80,11 @@ def read_txt(file_path: str, encodings: Optional[List[str]] = None) -> str:
     return ""
 
 
-def read_docx(file_path: str) -> str:
+def read_docx(docx_path: str) -> str:
     """قراءة النص من ملف DOCX (Word).
 
     Args:
-        file_path: مسار ملف DOCX.
+        docx_path: مسار ملف DOCX.
 
     Returns:
         النص المستخرج أو سلسلة فارغة في حالة الخطأ.
@@ -92,26 +92,26 @@ def read_docx(file_path: str) -> str:
     try:
         from docx import Document
 
-        if not Path(file_path).exists():
-            logger.error(f"ملف DOCX غير موجود: {file_path}")
+        if not Path(docx_path).exists():
+            logger.error(f"ملف DOCX غير موجود: {docx_path}")
             return ""
 
-        doc = Document(file_path)
-        paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
-        result = "\n".join(paragraphs)
+        doc = Document(docx_path)
+        text_parts: List[str] = [paragraph.text for paragraph in doc.paragraphs]
+        result = "\n".join(text_parts)
         
         if len(result) > MAX_TEXT_CHARS:
             result = result[:MAX_TEXT_CHARS]
-            logger.warning(f"تم قص النص إلى الحد الأقصى ({MAX_TEXT_CHARS} حرف).")
+            logger.warning(f"تم قص النص إلى {MAX_TEXT_CHARS} حرف لملف DOCX: {docx_path}")
         
-        logger.info(f"تم قراءة ملف DOCX بنجاح: {file_path}. عدد الأحرف: {len(result)}")
+        logger.info(f"تم قراءة ملف DOCX بنجاح: {docx_path}. عدد الأحرف: {len(result)}")
         return result
     
     except ImportError:
         logger.error("مكتبة python-docx غير مثبتة. قم بتثبيتها باستخدام: pip install python-docx")
         return ""
     except Exception as e:
-        logger.error(f"حدث خطأ أثناء قراءة ملف DOCX {file_path}: {e}", exc_info=True)
+        logger.error(f"حدث خطأ أثناء قراءة ملف DOCX {docx_path}: {e}", exc_info=True)
         return ""
 
 
@@ -119,7 +119,7 @@ def read_image_ocr(image_path: str, lang: str = "ara+eng") -> str:
     """استخراج النص من صورة باستخدام OCR (Tesseract).
 
     Args:
-        image_path: مسار ملف الصورة (PNG, JPG, JPEG, TIFF, BMP).
+        image_path: مسار ملف الصورة (PNG, JPG, JPEG, TIFF, BMP, GIF).
         lang: لغة OCR (افتراضي: 'ara+eng' للعربية والإنجليزية).
 
     Returns:
@@ -153,6 +153,88 @@ def read_image_ocr(image_path: str, lang: str = "ara+eng") -> str:
         return ""
 
 
+def read_epub(epub_path: str) -> str:
+    """قراءة النص من ملف EPUB.
+
+    Args:
+        epub_path: مسار ملف EPUB.
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
+
+        if not Path(epub_path).exists():
+            logger.error(f"ملف EPUB غير موجود: {epub_path}")
+            return ""
+
+        book = epub.read_epub(epub_path)
+        text_parts: List[str] = []
+
+        for item in book.get_items():
+            if item.get_type() == 9:  # ITEM_DOCUMENT
+                soup = BeautifulSoup(item.get_content(), 'html.parser')
+                text_parts.append(soup.get_text())
+                
+                if sum(len(part) for part in text_parts) > MAX_TEXT_CHARS:
+                    logger.warning(f"تم تجاوز الحد الأقصى للنص ({MAX_TEXT_CHARS} حرف). تم إيقاف القراءة.")
+                    break
+
+        result = "\n".join(text_parts)
+        logger.info(f"تم قراءة ملف EPUB بنجاح: {epub_path}. عدد الأحرف: {len(result)}")
+        return result
+
+    except ImportError:
+        logger.error("مكتبات ebooklib أو beautifulsoup4 غير مثبتة. قم بتثبيتها باستخدام: pip install ebooklib beautifulsoup4")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء قراءة ملف EPUB {epub_path}: {e}", exc_info=True)
+        return ""
+
+
+def read_html(html_path: str, encoding: str = "utf-8") -> str:
+    """قراءة النص من ملف HTML/HTM.
+
+    Args:
+        html_path: مسار ملف HTML.
+        encoding: الترميز المستخدم (افتراضي: utf-8).
+
+    Returns:
+        النص المستخرج أو سلسلة فارغة في حالة الخطأ.
+    """
+    try:
+        from bs4 import BeautifulSoup
+
+        if not Path(html_path).exists():
+            logger.error(f"ملف HTML غير موجود: {html_path}")
+            return ""
+
+        content = Path(html_path).read_text(encoding=encoding)
+        soup = BeautifulSoup(content, 'html.parser')
+        
+        # إزالة السكريبتات والستايلات
+        for script in soup(['script', 'style']):
+            script.decompose()
+        
+        result = soup.get_text(separator='\n', strip=True)
+        
+        if len(result) > MAX_TEXT_CHARS:
+            result = result[:MAX_TEXT_CHARS]
+            logger.warning(f"تم قص النص إلى {MAX_TEXT_CHARS} حرف لملف HTML: {html_path}")
+        
+        logger.info(f"تم قراءة ملف HTML بنجاح: {html_path}. عدد الأحرف: {len(result)}")
+        return result
+
+    except ImportError:
+        logger.error("مكتبة beautifulsoup4 غير مثبتة. قم بتثبيتها باستخدام: pip install beautifulsoup4")
+        return ""
+    except Exception as e:
+        logger.error(f"حدث خطأ أثناء قراءة ملف HTML {html_path}: {e}", exc_info=True)
+        return ""
+
+
 def extract_text(file_path: str, encodings: Optional[List[str]] = None, ocr_lang: str = "ara+eng") -> str:
     """استخراج النص بناءً على امتداد الملف.
 
@@ -165,18 +247,27 @@ def extract_text(file_path: str, encodings: Optional[List[str]] = None, ocr_lang
         النص المستخرج أو سلسلة فارغة إذا كان الامتداد غير مدعوم.
     """
     ext = Path(file_path).suffix.lower()
+    file_format = FileFormat.from_extension(ext)
     
     if not Path(file_path).exists():
         logger.error(f"الملف غير موجود: {file_path}")
         return ""
     
-    if ext == ".pdf":
+    if not file_format.is_supported:
+        logger.warning(f"امتداد الملف غير مدعوم: {ext}")
+        return ""
+    
+    if file_format == FileFormat.PDF:
         return read_pdf(file_path)
-    elif ext == ".txt":
+    elif file_format == FileFormat.TXT:
         return read_txt(file_path, encodings=encodings)
-    elif ext == ".docx":
+    elif file_format == FileFormat.DOCX:
         return read_docx(file_path)
-    elif ext in [".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"]:
+    elif file_format == FileFormat.EPUB:
+        return read_epub(file_path)
+    elif file_format in (FileFormat.HTML, FileFormat.HTM):
+        return read_html(file_path, encodings=encodings[0] if encodings else "utf-8")
+    elif file_format in FileFormat.image_formats():
         return read_image_ocr(file_path, lang=ocr_lang)
     else:
         logger.warning(f"امتداد الملف غير مدعوم: {ext}")
