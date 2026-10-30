@@ -1,4 +1,4 @@
-"""المنظم الرئيسي للمكتبة."""
+"""تنظيم الملفات في المكتبة الرقمية."""
 
 import logging
 from pathlib import Path
@@ -7,6 +7,8 @@ from typing import Tuple, Optional, List
 from basirah.classification.classifier import classify
 from basirah.io.file_handler import extract_text
 from basirah.io.mover import move_file
+from basirah.models.categories import SUPPORTED_EXTENSIONS
+from basirah.reports.generator import ReportGenerator, FileStats
 
 # إعداد المسجل (Logger)
 logger = logging.getLogger(__name__)
@@ -15,7 +17,8 @@ logger = logging.getLogger(__name__)
 def organize_library(
     library_path: str,
     encodings: Optional[List[str]] = None,
-    normalize_text: bool = True
+    normalize_text: bool = True,
+    report_generator: Optional[ReportGenerator] = None,
 ) -> Tuple[int, int]:
     """تنظيم الملفات المدعومة في مسار مكتبة.
 
@@ -23,6 +26,7 @@ def organize_library(
         library_path: مسار المكتبة المراد تنظيمها.
         encodings: قائمة الترميزات لقراءة ملفات النص.
         normalize_text: ما إذا كان يجب تطبيع النص قبل التصنيف.
+        report_generator: مولد تقارير اختياري لتتبع الإحصائيات.
 
     Returns:
         tuple: (إجمالي الملفات، عدد الملفات المصنفة).
@@ -46,7 +50,7 @@ def organize_library(
     classified_files = 0
 
     for entry in base.iterdir():
-        if not entry.is_file() or entry.suffix.lower() not in {".pdf", ".txt"}:
+        if not entry.is_file() or entry.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
         total_files += 1
@@ -59,11 +63,28 @@ def organize_library(
                 logger.warning(f"لم يتم استخراج أي نص من الملف: {entry.name}")
                 continue
             
-            category, score = classify(text, normalized=normalize_text)
+            category, score, all_scores, is_classified, method, explanations = classify(
+                text, 
+                normalized=normalize_text,
+                return_details=True
+            )
             
             if category == "غير_مصنف":
                 logger.warning(f"تعذر تصنيف الملف: {entry.name}")
                 continue
+            
+            # إضافة إحصائيات إذا كان هناك مولد تقارير
+            if report_generator:
+                file_stat = FileStats(
+                    file_path=str(entry),
+                    category=category,
+                    confidence=score,
+                    file_size_bytes=entry.stat().st_size,
+                    word_count=len(text.split()),
+                    char_count=len(text),
+                    classification_method=method,
+                )
+                report_generator.add_file_stat(file_stat)
             
             target_folder = base / category
             move_file(str(entry), str(target_folder))
