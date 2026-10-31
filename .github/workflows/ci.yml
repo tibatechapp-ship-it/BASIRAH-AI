@@ -35,3 +35,16 @@ jobs:
       - name: Secrets
         uses: gitleaks/gitleaks-action@v3
         continue-on-error: true
+
+  retrieval-quality:
+    name: Retrieval quality gate (Recall@5 / MRR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: { python-version: "3.11" }
+      - name: Run golden-set evaluation (20 queries, thresholds 0.70/0.50)
+        run: |
+          PYTHONPATH=src python src/api/eval_retrieval.py \
+            --corpus tests/eval/corpus.json \
+            --golden tests/eval/golden_set.json
