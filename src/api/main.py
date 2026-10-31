@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from src.api.database import Base, engine
-from src.api.routers import documents, library
+from src.api.routers import dashboard, documents, library
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +15,7 @@ app = FastAPI(
 
 app.include_router(documents.router)
 app.include_router(library.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/health")

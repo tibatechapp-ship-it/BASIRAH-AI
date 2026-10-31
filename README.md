@@ -25,6 +25,7 @@
 |---|---|
 | CI أخضر يشمل طبقة pgvector | [ci.yml](.github/workflows/ci.yml) يثبّت المتطلبات الكاملة ويجري الاختبارات فوق مكدس PostgreSQL/embeddings |
 | بحث دلالي عربي حقيقي | `GET /documents/search?q=...` عبر pgvector — موثق أدناه بأوامر التشغيل |
+| لوحة بيانات وصفية | `/dashboard` عربية RTL بلا JS + `/api/dashboard/stats` (العدد، توزيع المواضيع، التغطية الدلالية) + بحث تفاعلي يعلن نوعه (دلالي/نصي) — **10 اختبارات (52/52)** مع Escape كامل |
 | تصنيف هجين | قواعد قطعية + كلمات مفتاحية بتطبيع عربي + Naive Bayes/TF-IDF قابل للتدريب والحفظ |
 | OCR للصور | PNG/JPG/JPEG/TIFF/BMP/GIF بالعربية والإنجليزية (Tesseract) |
 | Docker stack كامل | `docker compose up --build` يرفع PostgreSQL+pgvector وFastAPI معاً |
