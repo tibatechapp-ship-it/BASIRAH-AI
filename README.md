@@ -1,248 +1,144 @@
-# BASIRAH-AI
+<p align="center">
+  <img src="https://img.shields.io/badge/BASIRAH--AI-%D8%A8%D8%B5%D9%8A%D8%B1%D8%A9-2EA043?style=for-the-badge" alt="بصيرة">
+</p>
 
-بصيرة منصة معرفية ذكية تهدف إلى تحويل المكتبات الرقمية والبحوث العلمية من ملفات مبعثرة إلى قاعدة معرفية منظمة وقابلة للبحث والتحليل.
+# بصيرة — BASIRAH-AI
 
-## ما هي بصيرة؟ (من خط معالجة إلى منصة)
+> **منصة ذكاء الوثائق العربية** — من أرشيف مبعثر وممسوح ضوئياً إلى قاعدة معرفية مصنفة وقابلة للبحث الدلالي. OCR عربي حقيقي + embeddings على pgvector — كله مفتوح المصدر ويعمل على جهازك.
 
-- **المشكلة**: المكتبات الرقمية والأبحاث تصل كملفات مبعثرة (PDF/EPUB/HTML) بلا فهرسة معرفية — قيمتها المحتملة مهدورة.
-- **ما هو الآن**: خط معالجة ذكي كامل — استخراج OCR → تصنيف ML → إعادة هيكلة (قرآني/EPUB/HTML) → تخزين معرفي على **pgvector** — بواجهة Streamlit وحزمة Docker Compose كاملة.
-- **المنتج المستهدف**: **منصة معرفية** فوق هذا الخط: بحث دلالي، لوحة بيانات وصفية للبيانات الوصفية، رسم علاقات بين المستندات، وإزالة تكرار ذكية — هذا مسار التطوير القادم، والخط الحالي أساسه.
-- **لمن**: المكتبات والجامعات ومراكز البحث والناشرين العرب الذين يملكون أرشيفاً ورقياً/رقمياً ويريدون تحويله إلى أصل معرفي قابل للبحث.
+[![ci](https://github.com/tibatechapp-ship-it/BASIRAH-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/tibatechapp-ship-it/BASIRAH-AI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## الرؤية
+---
 
-الانتقال من إدارة الملفات إلى إدارة المعرفة.
+## 🎯 ما هي بصيرة؟ ولمن؟ (من خط معالجة إلى منصة)
 
-## البنية الجديدة
+- **المشكلة**: المكتبات الرقمية والأبحاث العربية تصل كملفات مبعثرة (PDF/EPUB/HTML/ممسوحات) بلا فهرسة معرفية — قيمتها المحتملة مهدورة.
+- **ما هو الآن**: خط معالجة ذكي كامل — استخراج OCR → تصنيف هجين (قواعد + كلمات مفتاحية + ML) → تخزين معرفي على **pgvector** ببحث دلالي عربي — بواجهات ثلاث (CLI/سطح مكتب/ويب RTL) وحزمة Docker Compose.
+- **المنتج المستهدف**: **منصة معرفية** فوق هذا الخط — مقياس جودة استرجاع معلن، لوحة بيانات وصفية، إزالة تكرار دلالية أذكى — معلن في [خارطة المنتَجة](https://github.com/tibatechapp-ship-it/vixona-github-profile/blob/main/docs/productization-plan.md)، والخط الحالي أساسه الصلب.
+- **لمن**: المكتبات والجامعات ومراكز البحث والناشرين العرب الذين يملكون أرشيفاً ورقياً/رقمياً ويريدون تحويله إلى أصل معرفي قابل للبحث — **بأدوات مفتوحة تحفظ خصوصية بياناتهم**، لا سحابة تقرأ وثائقهم.
+- **وعدٌ مميز**: معظم أدوات البحث الدلالي لا تفهم العربية بجدية (تطبيع الهمزات والتشكيل، OCR عربي جاد). بصيرة وُلدت لهذه الفجوة — عربية أولاً بلا ترجمة لاحقة.
 
-تمت إعادة هيكلة الكود باستخدام بنية معيارية:
+## ✅ يعمل اليوم — بالدليل (2026-10-31)
+
+| القدرة | الدليل القابل للتحقق |
+|---|---|
+| CI أخضر يشمل طبقة pgvector | [ci.yml](.github/workflows/ci.yml) يثبّت المتطلبات الكاملة ويجري الاختبارات فوق مكدس PostgreSQL/embeddings |
+| بحث دلالي عربي حقيقي | `GET /documents/search?q=...` عبر pgvector — موثق أدناه بأوامر التشغيل |
+| تصنيف هجين | قواعد قطعية + كلمات مفتاحية بتطبيع عربي + Naive Bayes/TF-IDF قابل للتدريب والحفظ |
+| OCR للصور | PNG/JPG/JPEG/TIFF/BMP/GIF بالعربية والإنجليزية (Tesseract) |
+| Docker stack كامل | `docker compose up --build` يرفع PostgreSQL+pgvector وFastAPI معاً |
+| واجهات ثلاث | CLI + Tkinter سطح مكتب + Streamlit ويب RTL |
+| 6 صيغ قراءة | PDF, TXT, DOCX, EPUB, HTML + الصور (OCR) |
+
+## 🗺️ البنية
 
 ```
 src/
 └── basirah/
-    ├── __init__.py          # نقطة الدخول الرئيسية
-    ├── cli.py               # واجهة سطر الأوامر
-    ├── organizer.py         # المنظم الرئيسي
-    ├── classification/      # وحدة التصنيف
-    │   ├── __init__.py
-    │   ├── classifier.py    # مصنف النصوص (قواعد + كلمات مفتاحية)
-    │   └── ml_classifier.py # مصنف التعلم الآلي (Naive Bayes + TF-IDF)
-    ├── gui/                 # الواجهة الرسومية
-    │   ├── __init__.py
-    │   └── app.py           # تطبيق Tkinter
-    ├── io/                  # وحدة الإدخال والإخراج
-    │   ├── __init__.py
-    │   ├── file_handler.py  # قراءة PDF و TXT و DOCX و EPUB و HTML والصور (OCR)
-    │   └── mover.py         # نقل الملفات
-    ├── models/              # نماذج البيانات
-    │   ├── __init__.py
-    │   └── categories.py    # فئات التصنيف وصيغ الملفات (Enum)
-    ├── reports/             # التقارير والإحصاءات
-    │   ├── __init__.py
-    │   └── generator.py     # مولد تقارير المكتبة
-    ├── rules/               # القواعد الثابتة
-    │   ├── __init__.py
-    │   └── fixed_rules.py   # محرك القواعد الدينية
-    └── utils/               # دوال مساعدة
-        ├── __init__.py
-        └── helpers.py       # تطبيع النص العربي
+    ├── cli.py               واجهة سطر الأوامر
+    ├── organizer.py         المنظم الرئيسي
+    ├── classification/
+    │   ├── classifier.py    مصنف النصوص (قواعد + كلمات مفتاحية)
+    │   └── ml_classifier.py مصنف التعلم الآلي (Naive Bayes + TF-IDF)
+    ├── gui/app.py           تطبيق Tkinter
+    ├── io/
+    │   ├── file_handler.py  قراءة PDF/TXT/DOCX/EPUB/HTML والصور (OCR)
+    │   └── mover.py         نقل الملفات
+    ├── models/categories.py فئات التصنيف وصيغ الملفات (Enum)
+    ├── reports/generator.py مولد تقارير المكتبة
+    ├── rules/fixed_rules.py محرك القواعد القطعية
+    └── utils/helpers.py     تطبيع النص العربي
+src/api/                    خادم FastAPI + pgvector (الرفع والفهرسة والبحث الدلالي)
+src/gui.py                  واجهة Streamlit ويب (RTL)
+tests/                      جناح الاختبارات (خلايا التصنيف، IO، API)
 ```
 
-## المميزات
-
-### الإصدار الحالي (0.2)
-
-- **تصنيف المحتوى** حسب الموضوع (القرآن، العقيدة، الفقه، السيرة، الحديث)
-- **دعم صيغ متعددة**: PDF, TXT, DOCX, EPUB, HTML
-- **دعم OCR للصور** والملفات الممسوحة ضوئياً (PNG, JPG, JPEG, TIFF, BMP, GIF) بالعربية والإنجليزية
-- **محرك قواعد ثابتة** للتعرف القطعي على النصوص الدينية
-- **تصنيف بالكلمات المفتاحية** مع تطبيع النص العربي
-- **تحسين دقة التصنيف باستخدام التعلم الآلي** (Naive Bayes + TF-IDF) مع تصنيف هجين
-- **حفظ وتحميل نماذج ML المدربة**
-- **تقارير وإحصائيات** عن حالة المكتبة
-- **واجهة رسومية** (Tkinter)
-- **إنشاء المجلدات تلقائياً**
-- **معالجة التصادم في أسماء الملفات**
-
-### تحسينات Quality of Life
-
-- استخدام `Enum` للفئات وصيغ الملفات لصيانة أفضل
-- `TypedDict` لنتائج التصنيف
-- دعم كامل لـ Type Hints
-- معالجة أخطاء محسنة
-- سجلات تفصيلية (Logging)
-
-## التثبيت
+## 🚀 البدء في 60 ثانية
 
 ```bash
 pip install -r requirements.txt
-```
+# لدعم OCR: ثبّت Tesseract + حزمة اللغة العربية على نظامك
 
-أو باستخدام Conda:
-
-```bash
-conda env create -f environment.yml
-conda activate basirah-ai
-```
-
-ملاحظة: لدعم OCR تحتاج إلى تثبيت محرك Tesseract على النظام مع حزمة اللغة العربية.
-
-## الاستخدام
-
-### من سطر الأوامر:
-
-```bash
+# نظّم مكتبة كاملة من سطر الأوامر
 PYTHONPATH=src python -m basirah.cli
+
+# أو عبر Docker — خادم + قاعدة متجهات جاهزان
+docker compose up --build
+# ثم: http://localhost:8000/docs
 ```
 
-### الواجهة الرسومية:
-
-```bash
-PYTHONPATH=src python -c "from basirah.gui.app import run_gui; run_gui()"
-```
-
-### كوحدة برمجية:
+### كوحدة برمجية
 
 ```python
 from basirah import organize_library
-from basirah.classification import classify, classify_with_details, TextClassifier
-from basirah.classification import MLTextClassifier, train_from_samples
+from basirah.classification import classify, MLTextClassifier, train_from_samples
 
-# تنظيم مكتبة
 total, classified = organize_library("/path/to/library")
 
-# تصنيف نص
-category, score = classify("الصلاة والزكاة")
-print(category)  # الفقه
+category, score = classify("الصلاة والزكاة")   # → الفقه
 
-# تصنيف مع التفاصيل
-details = classify_with_details("العقيدة والتوحيد")
-print(details)
-# {
-#     "category": "العقيدة",
-#     "score": 0.2,
-#     "all_scores": {...},
-#     "is_classified": True,
-#     "method": "keywords",
-#     "explanations": []
-# }
-
-# استخدام المصنف ككائن
-classifier = TextClassifier(use_fixed_rules=True, min_confidence=0.1)
-result = classifier.classify("حديث رسول الله صلى الله عليه وسلم")
-
-# استخدام التعلم الآلي للتصنيف
 samples = [
     {"text": "كتاب عن الفقه الإسلامي", "label": "فقه"},
     {"text": "حديث شريف عن النبي", "label": "حديث"},
 ]
-ml_classifier = train_from_samples(samples)
-category_ml, confidence = ml_classifier.classify("هذا كتاب فقهي")
-print(f"التصنيف: {category_ml}, الدقة: {confidence}")
-
-# حفظ وتحميل النموذج
-ml_classifier.save_model("model.pkl")
-new_classifier = MLTextClassifier()
-new_classifier.load_model("model.pkl")
+ml = train_from_samples(samples)
+ml.save_model("model.pkl")                     # تدريب وحفظ وتحميل النموذج
 ```
 
-### دعم صيغ الملفات:
-
-```python
-from basirah.io import extract_text, read_docx
-
-# استخراج نص من أي ملف مدعوم
-text = extract_text("book.pdf")
-text = extract_text("notes.txt")
-text = extract_text("document.docx")
-text = extract_text("ebook.epub")
-text = extract_text("page.html")
-text = extract_text("scanned_page.png")  # OCR
-
-# قراءة مباشرة
-text = read_docx("document.docx")
-```
-
-## التشغيل باستخدام Docker
+### خادم API الدلالي
 
 ```bash
 docker compose up --build
+# PostgreSQL+pgvector على 5432 — FastAPI على 8000
 ```
 
-سيتم تشغيل:
-- قاعدة بيانات PostgreSQL مع pgvector على المنفذ `5432`
-- الـ API باستخدام FastAPI على المنفذ `8000`
+| نقطة النهاية | الوظيفة |
+|---|---|
+| `GET /health` | التحقق من حالة النظام |
+| `POST /documents/upload` | رفع مستند وفهرسته دلالياً |
+| `GET /documents/` | قائمة المستندات المفهرسة |
+| `GET /documents/search?q=...` | **البحث الدلالي بالعربية** |
+| `POST /library/organize` | رفع أرشيف ZIP وتنظيمه تلقائياً |
 
-## واجهة برمجة التطبيقات (API)
-
-بعد التشغيل، يمكنك زيارة وثائق التفاعلية:
-
-```
-http://localhost:8000/docs
-```
-
-### نقاط النهاية الرئيسية
-
-- `GET /health` — التحقق من حالة النظام.
-- `POST /documents/upload` — رفع مستند وفهرسته والبحث الدلالي.
-- `GET /documents/` — قائمة المستندات المفهرسة.
-- `GET /documents/search?q=...` — البحث الدلالي باللغة العربية.
-- `POST /library/organize` — رفع أرشيف ZIP وتنظيم محتواه تلقائياً.
-
-### الواجهة الرسومية عبر الويب (Streamlit)
+### واجهة الويب (Streamlit)
 
 ```bash
 streamlit run src/gui.py
 ```
 
-تفتح واجهة ويب تدعم اللغة العربية واتجاه RTL، وتتيح رفع مكتبة مضغوطة (ZIP) وتنظيمها تلقائياً، واكتشاف الملفات المكررة، وعرض هيكل المكتبة المصنفة.
+واجهة عربية RTL: رفع مكتبة مضغوطة (ZIP) وتنظيم تلقائي، اكتشاف المكررات، وعرض هيكل المكتبة المصنفة.
 
-## الاختبارات
+## 🧪 الاختبارات
 
 ```bash
 PYTHONPATH=src pytest tests/ -v
 ```
 
-## خارطة الطريق
+> الحالة بصدق: كتلة الاختبارات أصغر مما تستحقه المنصة (خلايا التصنيف والإدخال/الإخراج مغطاة؛ طبقة API تُختبر في CI بكامل متطلباتها). أول معلم في [خارطة المنتَجة](https://github.com/tibatechapp-ship-it/vixona-github-profile/blob/main/docs/productization-plan.md) هو **مقياس جودة استرجاع معلن** (Recall@5 على مجموعة استعلامات ذهبية) — فجعل الجودة قابلة للقياس لا للادعاء.
 
-### الإصدار 0.1 ✓
+## 🗺️ خارطة الطريق
 
-- [x] قراءة PDF و TXT
-- [x] تصنيف أولي للكتب
-- [x] إنشاء المجلدات تلقائياً
-- [x] إعادة هيكلة الكود
+### المنجز ✓
+- [x] قراءة 6 صيغ + OCR عربي/إنجليزي
+- [x] تصنيف هجين (قواعد + كلمات + ML قابل للتدريب)
+- [x] إزالة المكرر + معالجة تصادم الأسماء
+- [x] واجهات: CLI + Tkinter + Streamlit RTL
+- [x] خادم FastAPI + pgvector: رفع وفهرسة و**بحث دلالي عربي**
+- [x] Docker stack كامل + CI أخضر
 
-### الإصدار 0.2 ✓
+### التالي — بالشراكة مع خارطة المحفظة
+- [ ] **مقياس جودة استرجاع** في CI (Recall@5 / MRR — 20 استعلاماً ذهبياً)
+- [ ] **لوحة بيانات وصفية**: توزيع المواضيع، الكيانات، بحث تفاعلي
+- [ ] تطبيع التشكيل/الهمزات قبل الفهرسة + دمج أذكى للمكررات الدلالية
+- [ ] ضبط chunking للعربية (حدود الجمل والعناوين)
+- [ ] رسم علاقات بين المستندات
+- [ ] OCR كامل للكتب متعددة الصفحات
 
-- [x] إزالة المكرر
-- [x] دعم DOCX
-- [x] دعم EPUB و HTML
-- [x] دعم OCR للصور (PNG, JPG, JPEG, TIFF, BMP, GIF)
-- [x] تحسين دقة التصنيف بالتعلم الآلي
-- [x] تحسين جودة الكود (Type Hints, TypedDict)
-- [x] استخدام Enum للفئات
-- [x] إضافة فئة "الحديث" للتصنيف
-- [x] توسيع الكلمات المفتاحية
-- [x] تقارير وإحصائيات
-- [x] واجهة رسومية (GUI)
+## 📄 الترخيص
 
-### الإصدار 0.3
+MIT — انظر [LICENSE](LICENSE). © 2026 Vixona Technologies (tibatechapp-ship-it)
 
-- [ ] تدريب نماذج ML على بيانات إسلامية موسعة
-- [ ] تقارير إحصائية متقدمة (رسوم بيانية)
+## 🧭 المكان في المحفظة
 
-### الإصدار 1.0
-
-- [ ] اكتشاف العلاقات بين الملفات
-- [ ] البحث الدلالي
-- [ ] OCR كامل للكتب المصورة متعددة الصفحات
-- [ ] تطبيق سطح مكتب
-- [ ] تطبيق أندرويد
-
-## المساهمة
-
-نرحب بالمساهمات في المشروع! يرجى فتح Issue أو Pull Request.
-
-## الترخيص
-
-[أضف معلومات الترخيص هنا]
+بصيرة درجة خامسة في [محفظة TibaTech](https://github.com/tibatechapp-ship-it/vixona-github-profile) — [بطاقة الأداء](https://github.com/tibatechapp-ship-it/vixona-github-profile/blob/main/docs/scorecard.md) · [خارطة المنتَجة](https://github.com/tibatechapp-ship-it/vixona-github-profile/blob/main/docs/productization-plan.md). التوثيق التفصيلي: [CHANGELOG.md](CHANGELOG.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md).
