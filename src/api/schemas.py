@@ -25,3 +25,6 @@ class SearchResult(BaseModel):
     filename: str
     category: str | None = None
     score: float
+    # الأسبوع 3: مقتطف من الـchunk المطابق (أو None للبحث بمستوى الوثيقة)
+    snippet: str | None = None
+    chunk_idx: int | None = None

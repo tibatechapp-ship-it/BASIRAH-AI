@@ -1,6 +1,8 @@
 name: ci
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -48,3 +50,39 @@ jobs:
           PYTHONPATH=src python src/api/eval_retrieval.py \
             --corpus tests/eval/corpus.json \
             --golden tests/eval/golden_set.json
+
+  # الأسبوع 3: الإصدار التلقائي — كل وسم v* يشغّل بوابة الجودة أولًا ثم
+  # ينشئ GitHub Release بملاحظات من CHANGELOG + مرفق أدلة الضبط الحتمي.
+  release:
+    name: Automatic release (tags v*)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: { python-version: "3.11" }
+      - name: Quality gate before release
+        run: |
+          PYTHONPATH=src python src/api/eval_retrieval.py \
+            --corpus tests/eval/corpus.json \
+            --golden tests/eval/golden_set.json
+      - name: Deterministic chunking evidence
+        run: python scripts/tune_chunking.py --json chunking-evidence.json
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          NOTES="releases/${TAG}.md"
+          mkdir -p releases
+          {
+            echo "## ${TAG}"
+            echo
+            awk -v tag="## [${TAG#v}]" 'index($0, tag) {flag=1; next} /^## \[/ && flag {exit} flag {print}' CHANGELOG.md
+            echo
+            echo "---"
+            echo "بوابة الجودة: Recall@5 / MRR فوق العتبتين 0.70/0.50 (خطوة سابقة)، وأدلة الـchunking الحتمية في المرفق."
+          } > "$NOTES"
+          gh release create "$TAG" --title "${TAG}" --notes-file "$NOTES" chunking-evidence.json

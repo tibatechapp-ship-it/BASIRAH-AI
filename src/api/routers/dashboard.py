@@ -152,13 +152,19 @@ def _results_html(rows: list[dict], kind: str, q: str) -> str:
 
 
 def _semantic_rows(db: Session, q: str, limit: int) -> tuple[list[dict], str]:
-    """بحث دلالي فعلي عبر مسار /documents/search الحقيقي — إن توفر."""
+    """بحث دلالي فعلي عبر مسار /documents/search الحقيقي — إن توفر.
+
+    صدق العرض: النتائج المنحلّة (score ≤ 0 — متجهات صفريّة أو لا تشابه)
+    تُسقط حتى تسقط الصفحة إلى المطابقة النصية المُعلنة بدل ادعاء دلالة
+    وهمية، والمعاينة تأتي من الـchunk المطابق فعلاً (الأسبوع 3).
+    """
     try:
         from src.api.routers.documents import search_documents
         results = search_documents(q=q, limit=limit, db=db)
+        usable = [r for r in results if r.score is not None and r.score > 0.0]
         return ([{"filename": r.filename, "category": getattr(r, "category", "") or "",
-                  "preview": (getattr(r, "text", "") or "")[:MAX_TEXT_PREVIEW]}
-                 for r in results], "مطابقة دلالية")
+                  "preview": (r.snippet or "")[:MAX_TEXT_PREVIEW]}
+                 for r in usable], "مطابقة دلالية")
     except Exception:
         return [], "مطابقة دلالية"
 

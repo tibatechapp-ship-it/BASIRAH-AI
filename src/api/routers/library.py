@@ -9,7 +9,12 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
 from src.api.database import get_db
-from src.api.dependencies import extract_text, file_hash, get_embedding_model
+from src.api.dependencies import (
+    extract_text,
+    file_hash,
+    get_embedding_model,
+    index_document_chunks,
+)
 from src.api.models import Document
 from basirah.classification import classify
 from basirah.io import move_file
@@ -65,6 +70,14 @@ def organize_library(
                     embedding=embedding,
                 )
                 db.add(doc)
+                db.flush()  # لضمان doc.id قبل فهرسة الأقسام
+                if text:
+                    try:
+                        # نقطة حفظ: فشل الأقسام يتراجع وحده والوثيقة تبقى
+                        with db.begin_nested():
+                            index_document_chunks(db, doc, text, model)
+                    except Exception:
+                        pass
                 classified += 1
 
         db.commit()
