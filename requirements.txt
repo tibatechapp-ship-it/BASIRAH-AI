@@ -21,7 +21,7 @@ pgvector==0.3.6
 sentence-transformers==6.2.0
 numpy>=1.26.0
 pydantic==2.9.2
-pydantic-settings==2.5.2
+pydantic-settings==2.16.2
 alembic==1.13.3
 httpx==0.28.1
 
